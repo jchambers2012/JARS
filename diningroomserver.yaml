@@ -1,0 +1,253 @@
+esphome:
+#  esphome_core_version:
+#    branch: dev
+  name: diningroomserver
+  platform: ESP8266
+  board: nodemcuv2
+  on_boot:
+    then:
+        - light.turn_off:
+            id: dining_room_cabinet_inside_a
+        - light.turn_off:
+            id: dining_room_cabinet_inside_b
+        - light.turn_off:
+            id: dining_room_cabinet_inside_c
+        - light.turn_off:
+            id: dining_room_cabinet_inside_d
+        - light.turn_off:
+            id: dining_room_cabinet_under
+
+switch:
+  - platform: restart
+    name: "Dining Room Cabinet Restart"
+  - platform: template
+    name: "Dining Room Cabinet Automation"
+    optimistic: true
+    id: dining_room_cabinet_automation
+  - platform: template
+    name: "Dining Room Cabinet Party Mode"
+    optimistic: true
+    id: dining_room_cabinet_party
+
+script:
+  - id: autooff_left
+    then:
+     - delay: 120min  # timer length
+     - light.turn_off:
+         id: dining_room_cabinet_inside_a
+     - light.turn_off:
+         id: dining_room_cabinet_inside_b
+  - id: autooff_right
+    then:
+     - delay: 120min  # timer length
+     - light.turn_off:
+         id: dining_room_cabinet_inside_c
+     - light.turn_off:
+         id: dining_room_cabinet_inside_d
+
+light:
+  - platform: fastled_clockless
+    chipset: WS2813
+    pin: D3
+    num_leds: 36
+    rgb_order: GRB
+    color_correct: [80%, 80%, 80%]
+    name: "Dining Room Cabinet Inside Left (left)"
+    id: dining_room_cabinet_inside_a
+    effects:
+      - addressable_rainbow:
+  - platform: fastled_clockless
+    chipset: WS2813
+    pin: D8
+    num_leds: 36
+    rgb_order: GRB
+    color_correct: [80%, 80%, 80%]
+    name: "Dining Room Cabinet Inside Left (right)"
+    id: dining_room_cabinet_inside_b
+    effects:
+      - addressable_rainbow:
+  - platform: fastled_clockless
+    chipset: WS2813
+    pin: D7
+    num_leds: 30
+    rgb_order: GRB
+    color_correct: [80%, 80%, 80%]
+    name: "Dining Room Cabinet Inside Right (left)"
+    id: dining_room_cabinet_inside_c
+    effects:
+      - addressable_rainbow:
+  - platform: fastled_clockless
+    chipset: WS2813
+    pin: D1
+    num_leds: 30
+    rgb_order: GRB
+    color_correct: [80%, 80%, 80%]
+    name: "Dining Room Cabinet Inside Right (right)"
+    id: dining_room_cabinet_inside_d
+    effects:
+      - addressable_rainbow:
+  - platform: fastled_clockless
+    chipset: WS2813
+    pin: D4
+    num_leds: 56
+    rgb_order: GRB
+    color_correct: [80%, 80%, 80%]
+    name: "Dining Room Cabinet Under"
+    id: dining_room_cabinet_under
+    effects:
+      - addressable_rainbow:
+          width: 200
+      - addressable_rainbow:
+          name: "Rainbow Effect Fast"
+          speed: 50
+          width: 200
+      - random:
+          name: "My Fast Random Effect"
+          transition_length: 4s
+          update_interval: 5s
+      - addressable_color_wipe:
+      - addressable_color_wipe:
+          name: Color Wipe Effect With Custom Values
+          colors:
+            - red: 100%
+              green: 100%
+              blue: 100%
+              num_leds: 30
+            - red: 0%
+              green: 0%
+              blue: 0%
+              num_leds: 30
+            - red: 100%
+              green: 0%
+              blue: 0%
+              num_leds: 30
+            - red: 0%
+              green: 100%
+              blue: 0%
+              num_leds: 30
+            - red: 0%
+              green: 0%
+              blue: 100%
+              num_leds: 30
+            - red: 100%
+              green: 100%
+              blue: 0%
+              num_leds: 30
+            - red: 0%
+              green: 100%
+              blue: 100%
+              num_leds: 30
+            - red: 100%
+              green: 0%
+              blue: 100%
+              num_leds: 30
+              
+binary_sensor:
+  - platform: gpio
+    name: "Dining Room Cabinet Left Door"
+    pin:
+     number: D2
+    device_class: door
+    id: dining_room_cabinet_door_left
+#    filters:
+#      - heartbeat: 3600s
+    on_release:
+#     if:
+#      condition:
+#        lambda: "return id(dining_room_cabinet_door_right).value == id(dining_room_cabinet_door_left).value;"
+      then:
+        - light.turn_off:
+            id: dining_room_cabinet_inside_a
+        - light.turn_off:
+            id: dining_room_cabinet_inside_b
+#        - light.turn_off:
+#            id: dining_room_cabinet_inside_c
+#        - light.turn_off:
+#            id: dining_room_cabinet_inside_d
+        - script.stop: autooff_left
+    on_press:
+      then:
+        - if:
+            condition:
+                switch.is_on: dining_room_cabinet_party
+            then:
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_a
+                    brightness: 100%
+                    effect: "rainbow"
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_b
+                    brightness: 100%
+                    effect: "rainbow"
+            else:
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_a
+                    brightness: 80%
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_b
+                    brightness: 80%
+        - script.stop: autooff_left
+        - script.execute: autooff_left
+
+  - platform: gpio
+    name: "Dining Room Cabinet Right Door"
+    pin:
+     number: D6
+    device_class: door
+    id: dining_room_cabinet_door_right
+    on_release:
+      then:
+        - light.turn_off:
+            id: dining_room_cabinet_inside_c
+        - light.turn_off:
+            id: dining_room_cabinet_inside_d
+        - script.stop: autooff_right
+    on_press:
+      then:
+        - if:
+            condition:
+                switch.is_on: dining_room_cabinet_party
+            then:
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_c
+                    brightness: 100%
+                    effect: "rainbow"
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_d
+                    brightness: 100%
+                    effect: "rainbow"
+            else:
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_c
+                    brightness: 80%
+                - light.turn_on:
+                    id: dining_room_cabinet_inside_d
+                    brightness: 80%
+        - script.stop: autooff_right
+        - script.execute: autooff_right
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    # Set this to the IP of the ESP
+    static_ip: 192.168.10.80
+    # Set this to the IP address of the router. Often ends with .1
+    gateway: 192.168.10.1
+    # The subnet of the network. 255.255.255.0 works for most home networks.
+    subnet: 255.255.255.0
+
+mqtt:
+  broker: !secret MQTT_broker
+  username: !secret MQTT_username
+  password: !secret MQTT_password
+  discovery: True
+  reboot_timeout: 1h
+
+# Enable logging
+logger:
+
+ota:
+
+web_server:
+   port: 80
