@@ -1,0 +1,99 @@
+esphome:
+  name: windowscontrol
+  platform: ESP8266
+  board: nodemcuv2
+  on_boot:
+    then:
+      - switch.turn_off: open_window_front
+      - switch.turn_off: close_window_front
+      - switch.turn_off: stop_window_front
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    # Set this to the IP of the ESP
+    static_ip: 192.168.10.90
+    # Set this to the IP address of the router. Often ends with .1
+    gateway: 192.168.10.1
+    # The subnet of the network. 255.255.255.0 works for most home networks.
+    subnet: 255.255.255.0
+
+
+mqtt:
+  broker: !secret MQTT_broker
+  username: !secret MQTT_username
+  password: !secret MQTT_password
+  discovery: True
+  reboot_timeout: 1h
+
+# Enable logging
+logger:
+
+ota:
+
+web_server:
+   port: 80
+
+          
+switch:
+- platform: gpio
+  pin: 
+      number: D7
+      inverted: yes
+  interlock: &interlock_fw [open_window_front, close_window_front, stop_window_front]
+  id: open_window_front
+- platform: gpio
+  pin: 
+      number: D3
+      inverted: yes
+  interlock: *interlock_fw
+  id: close_window_front
+- platform: gpio
+  pin: 
+      number: D4
+      inverted: yes
+  interlock: *interlock_fw
+  id: stop_window_front
+- platform: restart
+  name: "Windows Control Restart"
+  
+- platform: template
+  name: "Front Window Open"
+  optimistic: true
+  id: man_open_front_wondow
+  on_turn_on:
+    - cover.control: 
+        id: my_front_window
+        position: 100%
+- platform: template
+  name: "Front Window Close"
+  optimistic: true
+  id: man_close_front_wondow
+  on_turn_on:
+    - cover.control: 
+        id: my_front_window
+        position: 0%
+cover:
+- platform: time_based
+  name: "Front Window"
+  id: my_front_window
+  device_class: "curtain"
+  open_action:
+    - switch.turn_on: open_window_front
+    - delay: 1s
+    - switch.turn_off: open_window_front
+  open_duration: 5s
+  close_action:
+    - switch.turn_on: close_window_front
+    - delay: 1s
+    - switch.turn_off: close_window_front
+  close_duration: 5s
+  stop_action:
+    - switch.turn_on: stop_window_front
+    - switch.turn_off: man_open_front_wondow
+    - switch.turn_off: man_close_front_wondow
+    - switch.turn_off: open_window_front
+    - switch.turn_off: close_window_front
+    - delay: 1s
+    - switch.turn_off: stop_window_front
